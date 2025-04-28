@@ -176,7 +176,7 @@ export default function AdminProdutos() {
             </div>
             <Button 
               onClick={() => navigate('/admin/produtos/novo')} 
-              className="bg-gold-DEFAULT hover:bg-gold-dark text-white font-medium flex items-center gap-2 min-w-[140px] justify-center"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium flex items-center gap-2 min-w-[140px] justify-center"
             >
               <Plus className="h-4 w-4" />
               Novo Produto
@@ -239,8 +239,8 @@ export default function AdminProdutos() {
                       </p>
                       {!searchTerm && (
                         <Button 
-                          variant="link" 
-                          className="mt-2 text-gold-DEFAULT hover:text-gold-dark"
+                          variant="default"
+                          className="mt-2 bg-primary hover:bg-primary/90 text-primary-foreground"
                           onClick={() => navigate('/admin/produtos/novo')}
                         >
                           Adicionar produto
@@ -335,14 +335,14 @@ export default function AdminProdutos() {
             <AlertDialogCancel 
               onClick={handleDeleteCancel} 
               disabled={deletingProduct}
-              className="transition-colors"
+              className="hover:bg-secondary/80 transition-colors"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteConfirm}
               disabled={deletingProduct}
-              className="bg-destructive hover:bg-destructive/90 transition-colors"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors font-medium"
             >
               {deletingProduct ? (
                 <>
