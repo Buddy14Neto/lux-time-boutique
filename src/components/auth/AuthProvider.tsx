@@ -81,11 +81,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               });
             }
           })
-          .catch(console.error)
+          .catch((error) => {
+            console.error('Error fetching user profile:', error);
+          })
           .finally(() => setIsLoading(false));
       } else {
         setIsLoading(false);
       }
+    }).catch((error) => {
+      console.error('Error getting session:', error);
+      setIsLoading(false);
     });
 
     return () => {
@@ -162,11 +167,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Logout realizado com sucesso",
-    });
+  const logout = async (): Promise<void> => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logout realizado com sucesso",
+      });
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro no logout",
+        description: "Ocorreu um erro durante o logout.",
+      });
+    }
   };
 
   return (
