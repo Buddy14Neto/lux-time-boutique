@@ -214,10 +214,10 @@ export default function ProdutoForm() {
           .update(productData)
           .eq('id', id);
       } else {
-        // Insere um novo produto
+        // Insere um novo produto - Corrigido: passando um único objeto dentro de um array
         result = await supabase
           .from('products')
-          .insert([productData]);
+          .insert(productData);
       }
 
       if (result.error) {
