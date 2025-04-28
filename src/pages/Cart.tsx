@@ -1,5 +1,4 @@
-
-import React, { useEffect } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -8,6 +7,13 @@ import { Minus, Plus, X, ShoppingBag } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "@/components/ui/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const CartItem = ({ 
   id, 
@@ -130,18 +136,17 @@ const Cart = () => {
   const handleCheckout = () => {
     if (!isAuthenticated) {
       toast({
-        title: "Authentication required",
-        description: "Please log in to proceed with checkout",
         variant: "destructive",
+        title: "Authentication required",
+        description: "Please log in or create an account to complete your purchase",
       });
       navigate("/login", { state: { from: "/cart" } });
       return;
     }
     
-    // In a real application, we would redirect to the checkout page
     toast({
-      title: "Checkout initiated",
-      description: "Processing your order...",
+      title: "Proceeding to checkout",
+      description: "Preparing your order...",
     });
   };
   
@@ -221,54 +226,74 @@ const Cart = () => {
             </div>
             
             <div className="lg:w-1/3">
-              <div className="bg-card rounded-lg border border-border p-6 sticky top-24">
-                <h2 className="text-xl font-medium mb-6">Order Summary</h2>
-                
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatPrice(cart.subtotal)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>
-                      {cart.shipping === 0 
-                        ? "Free" 
-                        : formatPrice(cart.shipping)}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span>{formatPrice(cart.tax)}</span>
-                  </div>
-                  
-                  <div className="border-t border-border pt-4 mt-4">
-                    <div className="flex justify-between items-center font-semibold">
-                      <span>Total</span>
-                      <span>{formatPrice(cart.total)}</span>
+              <Card className="sticky top-24">
+                <CardHeader>
+                  <CardTitle>Order Summary</CardTitle>
+                  <CardDescription>
+                    {!isAuthenticated && "Login required to complete purchase"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatPrice(cart.subtotal)}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Shipping</span>
+                      <span>
+                        {cart.shipping === 0 
+                          ? "Free" 
+                          : formatPrice(cart.shipping)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Tax</span>
+                      <span>{formatPrice(cart.tax)}</span>
+                    </div>
+                    
+                    <div className="border-t border-border pt-4 mt-4">
+                      <div className="flex justify-between items-center font-semibold">
+                        <span>Total</span>
+                        <span>{formatPrice(cart.total)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                <Button 
-                  className="w-full mt-6 bg-gold-DEFAULT hover:bg-gold-dark text-white py-6"
-                  onClick={handleCheckout}
-                >
-                  {isAuthenticated ? "Proceed to Checkout" : "Login to Checkout"}
-                </Button>
-                
-                <div className="mt-6 text-center text-sm text-muted-foreground">
-                  <p className="mb-2">We accept</p>
-                  <div className="flex justify-center space-x-2">
-                    <img src="https://raw.githubusercontent.com/realvjy/payment-logos/main/public/visa.png" alt="Visa" className="h-6" />
-                    <img src="https://raw.githubusercontent.com/realvjy/payment-logos/main/public/mastercard.png" alt="Mastercard" className="h-6" />
-                    <img src="https://raw.githubusercontent.com/realvjy/payment-logos/main/public/amex.png" alt="American Express" className="h-6" />
-                    <img src="https://raw.githubusercontent.com/realvjy/payment-logos/main/public/paypal.png" alt="PayPal" className="h-6" />
+                  
+                  <Button 
+                    onClick={handleCheckout}
+                    className="w-full mt-6 bg-gold-DEFAULT hover:bg-gold-dark text-white"
+                  >
+                    {isAuthenticated ? "Proceed to Checkout" : "Login to Checkout"}
+                  </Button>
+                  
+                  {!isAuthenticated && (
+                    <p className="mt-4 text-sm text-center text-muted-foreground">
+                      Please{" "}
+                      <Link to="/login" className="text-gold-DEFAULT hover:text-gold-dark">
+                        login
+                      </Link>
+                      {" "}or{" "}
+                      <Link to="/register" className="text-gold-DEFAULT hover:text-gold-dark">
+                        create an account
+                      </Link>
+                      {" "}to complete your purchase
+                    </p>
+                  )}
+                  
+                  <div className="mt-6 text-center text-sm text-muted-foreground">
+                    <p className="mb-2">We accept</p>
+                    <div className="flex justify-center space-x-2">
+                      <img src="https://raw.githubusercontent.com/realvjy/payment-logos/main/public/visa.png" alt="Visa" className="h-6" />
+                      <img src="https://raw.githubusercontent.com/realvjy/payment-logos/main/public/mastercard.png" alt="Mastercard" className="h-6" />
+                      <img src="https://raw.githubusercontent.com/realvjy/payment-logos/main/public/amex.png" alt="American Express" className="h-6" />
+                      <img src="https://raw.githubusercontent.com/realvjy/payment-logos/main/public/paypal.png" alt="PayPal" className="h-6" />
+                    </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
