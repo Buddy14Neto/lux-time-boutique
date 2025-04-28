@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -61,6 +60,10 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const AdminLogin = () => {
+  return <div>Admin Login Page</div>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -93,6 +96,7 @@ const App = () => (
               } />
               
               {/* Admin Routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={
                 <AdminRoute>
                   <AdminDashboard />

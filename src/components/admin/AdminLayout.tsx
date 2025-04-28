@@ -15,9 +15,9 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Se o usuário não estiver carregando e não estiver autenticado, redireciona para o login
+    // Se o usuário não estiver carregando e não estiver autenticado, redireciona para o login admin
     if (!isLoading && !isAuthenticated) {
-      navigate('/login');
+      navigate('/admin/login');
       return;
     }
 
