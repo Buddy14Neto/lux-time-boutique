@@ -10,6 +10,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: string;
+  isAdmin: boolean;
 }
 
 // Define Auth Context
@@ -17,10 +18,12 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  promoteToAdmin: (userId: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,7 +52,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 id: session.user.id,
                 email: session.user.email!,
                 name: profile.name || '',
-                role: profile.role || 'user'
+                role: profile.role || 'user',
+                isAdmin: profile.is_admin || false
               });
             }
           } catch (error) {
@@ -81,7 +85,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 id: session.user.id,
                 email: session.user.email!,
                 name: profile.name || '',
-                role: profile.role || 'user'
+                role: profile.role || 'user',
+                isAdmin: profile.is_admin || false
               });
             }
           } catch (error) {
@@ -190,16 +195,60 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Função para promover um usuário para administrador
+  const promoteToAdmin = async (userId: string): Promise<boolean> => {
+    try {
+      if (!user?.isAdmin) {
+        toast({
+          variant: "destructive",
+          title: "Acesso negado",
+          description: "Apenas administradores podem promover outros usuários.",
+        });
+        return false;
+      }
+
+      const { error } = await supabase.rpc('set_user_admin', {
+        user_id: userId,
+        is_admin_status: true
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Erro ao promover usuário",
+          description: error.message,
+        });
+        return false;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Usuário promovido a administrador com sucesso.",
+      });
+      return true;
+    } catch (error) {
+      console.error("Erro ao promover usuário:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao promover usuário",
+        description: "Ocorreu um erro inesperado.",
+      });
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         session,
         isAuthenticated: !!user,
+        isAdmin: user?.isAdmin || false,
         isLoading,
         login,
         register,
-        logout
+        logout,
+        promoteToAdmin
       }}
     >
       {children}

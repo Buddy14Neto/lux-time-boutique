@@ -17,6 +17,14 @@ import Orders from "./pages/user/Orders";
 import Profile from "./pages/user/Profile";
 import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
 
+// Admin Pages
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminProdutos from "./pages/admin/Produtos";
+import ProdutoForm from "./pages/admin/ProdutoForm";
+import AdminPedidos from "./pages/admin/Pedidos";
+import AdminUsuarios from "./pages/admin/Usuarios";
+import AdminConfiguracoes from "./pages/admin/Configuracoes";
+
 const queryClient = new QueryClient();
 
 // Protected route component to require authentication
@@ -29,6 +37,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Admin route component to require admin authentication
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
   }
   
   return <>{children}</>;
@@ -64,6 +91,44 @@ const App = () => (
                   <Profile />
                 </ProtectedRoute>
               } />
+              
+              {/* Admin Routes */}
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              } />
+              <Route path="/admin/produtos" element={
+                <AdminRoute>
+                  <AdminProdutos />
+                </AdminRoute>
+              } />
+              <Route path="/admin/produtos/novo" element={
+                <AdminRoute>
+                  <ProdutoForm />
+                </AdminRoute>
+              } />
+              <Route path="/admin/produtos/:id" element={
+                <AdminRoute>
+                  <ProdutoForm />
+                </AdminRoute>
+              } />
+              <Route path="/admin/pedidos" element={
+                <AdminRoute>
+                  <AdminPedidos />
+                </AdminRoute>
+              } />
+              <Route path="/admin/usuarios" element={
+                <AdminRoute>
+                  <AdminUsuarios />
+                </AdminRoute>
+              } />
+              <Route path="/admin/configuracoes" element={
+                <AdminRoute>
+                  <AdminConfiguracoes />
+                </AdminRoute>
+              } />
+              
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

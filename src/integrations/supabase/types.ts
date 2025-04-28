@@ -9,11 +9,189 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      order_items: {
+        Row: {
+          id: string
+          order_id: string
+          price: number
+          product_id: string
+          quantity: number
+          total: number
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          price: number
+          product_id: string
+          quantity: number
+          total: number
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          price?: number
+          product_id?: string
+          quantity?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          address_city: string
+          address_country: string
+          address_state: string
+          address_street: string
+          address_zip: string
+          created_at: string
+          id: string
+          payment_method: string
+          shipping: number
+          status: string
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_city: string
+          address_country?: string
+          address_state: string
+          address_street: string
+          address_zip: string
+          created_at?: string
+          id?: string
+          payment_method: string
+          shipping: number
+          status?: string
+          subtotal: number
+          tax: number
+          total: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_city?: string
+          address_country?: string
+          address_state?: string
+          address_street?: string
+          address_zip?: string
+          created_at?: string
+          id?: string
+          payment_method?: string
+          shipping?: number
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          bestseller: boolean | null
+          brand: string
+          case_diameter: string
+          case_material: string
+          created_at: string
+          crystal: string
+          description: string
+          dial_color: string
+          discount_price: number | null
+          featured: boolean | null
+          functions: string[]
+          id: string
+          images: string[]
+          movement: string
+          name: string
+          new_arrival: boolean | null
+          power_reserve: string
+          price: number
+          reference: string
+          short_description: string
+          strap_material: string
+          style: string[]
+          updated_at: string
+          water_resistance: string
+        }
+        Insert: {
+          bestseller?: boolean | null
+          brand: string
+          case_diameter: string
+          case_material: string
+          created_at?: string
+          crystal: string
+          description: string
+          dial_color: string
+          discount_price?: number | null
+          featured?: boolean | null
+          functions: string[]
+          id?: string
+          images: string[]
+          movement: string
+          name: string
+          new_arrival?: boolean | null
+          power_reserve: string
+          price: number
+          reference: string
+          short_description: string
+          strap_material: string
+          style: string[]
+          updated_at?: string
+          water_resistance: string
+        }
+        Update: {
+          bestseller?: boolean | null
+          brand?: string
+          case_diameter?: string
+          case_material?: string
+          created_at?: string
+          crystal?: string
+          description?: string
+          dial_color?: string
+          discount_price?: number | null
+          featured?: boolean | null
+          functions?: string[]
+          id?: string
+          images?: string[]
+          movement?: string
+          name?: string
+          new_arrival?: boolean | null
+          power_reserve?: string
+          price?: number
+          reference?: string
+          short_description?: string
+          strap_material?: string
+          style?: string[]
+          updated_at?: string
+          water_resistance?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           email: string | null
           id: string
+          is_admin: boolean | null
           name: string | null
           role: string | null
           updated_at: string | null
@@ -22,6 +200,7 @@ export type Database = {
           avatar_url?: string | null
           email?: string | null
           id: string
+          is_admin?: boolean | null
           name?: string | null
           role?: string | null
           updated_at?: string | null
@@ -30,6 +209,7 @@ export type Database = {
           avatar_url?: string | null
           email?: string | null
           id?: string
+          is_admin?: boolean | null
           name?: string | null
           role?: string | null
           updated_at?: string | null
@@ -41,7 +221,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      set_user_admin: {
+        Args: { user_id: string; is_admin_status: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

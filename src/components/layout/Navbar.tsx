@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, Menu, X, Search, Heart } from "lucide-react";
+import { ShoppingCart, User, Menu, X, Search, Heart, LayoutDashboard } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -11,7 +11,8 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { cart } = useCart();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, isAdmin, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +25,12 @@ export function Navbar() {
   }, []);
 
   const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+    setMobileMenuOpen(false);
+  };
 
   return (
     <header
@@ -74,14 +81,23 @@ export function Navbar() {
           </Button>
           
           {isAuthenticated ? (
-            <Link to="/dashboard">
-              <Button variant="ghost" size="icon" aria-label="Account" className="relative">
-                <User className="h-5 w-5" />
-                {user?.role === "admin" && (
-                  <span className="absolute -top-1 -right-1 bg-gold-DEFAULT dark:bg-gold-dark text-white text-xs rounded-full h-2 w-2"></span>
-                )}
+            <>
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="icon" aria-label="Admin" className="relative">
+                    <LayoutDashboard className="h-5 w-5" />
+                  </Button>
+                </Link>
+              )}
+              <Link to="/dashboard">
+                <Button variant="ghost" size="icon" aria-label="Account" className="relative">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Button variant="ghost" size="icon" aria-label="Logout" onClick={handleLogout}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
               </Button>
-            </Link>
+            </>
           ) : (
             <Link to="/login">
               <Button variant="ghost" size="icon" aria-label="Login">
@@ -177,11 +193,17 @@ export function Navbar() {
                 >
                   My Account
                 </Link>
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className="text-foreground hover:text-gold-DEFAULT transition-colors py-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
                 <button
-                  onClick={() => {
-                    logout();
-                    setMobileMenuOpen(false);
-                  }}
+                  onClick={handleLogout}
                   className="text-left text-foreground hover:text-gold-DEFAULT transition-colors py-2"
                 >
                   Logout
