@@ -1,11 +1,13 @@
 
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, X, ShoppingBag } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { toast } from "@/components/ui/use-toast";
 
 const CartItem = ({ 
   id, 
@@ -42,6 +44,10 @@ const CartItem = ({
           src={image} 
           alt={name} 
           className="w-full h-full object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=600&q=80";
+          }}
         />
       </div>
       
@@ -110,6 +116,8 @@ const CartItem = ({
 
 const Cart = () => {
   const { cart, updateQuantity, removeItem, clearCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -117,6 +125,24 @@ const Cart = () => {
       currency: 'USD',
       minimumFractionDigits: 0,
     }).format(price);
+  };
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to proceed with checkout",
+        variant: "destructive",
+      });
+      navigate("/login", { state: { from: "/cart" } });
+      return;
+    }
+    
+    // In a real application, we would redirect to the checkout page
+    toast({
+      title: "Checkout initiated",
+      description: "Processing your order...",
+    });
   };
   
   if (cart.items.length === 0) {
@@ -228,8 +254,9 @@ const Cart = () => {
                 
                 <Button 
                   className="w-full mt-6 bg-gold-DEFAULT hover:bg-gold-dark text-white py-6"
+                  onClick={handleCheckout}
                 >
-                  Proceed to Checkout
+                  {isAuthenticated ? "Proceed to Checkout" : "Login to Checkout"}
                 </Button>
                 
                 <div className="mt-6 text-center text-sm text-muted-foreground">

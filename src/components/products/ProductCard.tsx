@@ -39,6 +39,10 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
           src={product.images[0]}
           alt={product.name}
           className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=600&q=80";
+          }}
         />
         <div className="watch-card-shine"></div>
         
@@ -121,4 +125,4 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
       </div>
     </Link>
   );
-}
+};

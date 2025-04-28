@@ -5,11 +5,13 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, User, Menu, X, Search, Heart } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { cart } = useCart();
+  const { isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -71,9 +73,22 @@ export function Navbar() {
             <Heart className="h-5 w-5" />
           </Button>
           
-          <Button variant="ghost" size="icon" aria-label="Account">
-            <User className="h-5 w-5" />
-          </Button>
+          {isAuthenticated ? (
+            <Link to="/dashboard">
+              <Button variant="ghost" size="icon" aria-label="Account" className="relative">
+                <User className="h-5 w-5" />
+                {user?.role === "admin" && (
+                  <span className="absolute -top-1 -right-1 bg-gold-DEFAULT dark:bg-gold-dark text-white text-xs rounded-full h-2 w-2"></span>
+                )}
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/login">
+              <Button variant="ghost" size="icon" aria-label="Login">
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
+          )}
           
           <Link to="/cart">
             <Button variant="ghost" size="icon" className="relative" aria-label="Cart">
@@ -152,15 +167,42 @@ export function Navbar() {
             >
               Contact
             </Link>
+            
+            {isAuthenticated ? (
+              <>
+                <Link 
+                  to="/dashboard" 
+                  className="text-foreground hover:text-gold-DEFAULT transition-colors py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Account
+                </Link>
+                <button
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-left text-foreground hover:text-gold-DEFAULT transition-colors py-2"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link 
+                to="/login" 
+                className="text-foreground hover:text-gold-DEFAULT transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Login / Register
+              </Link>
+            )}
+            
             <div className="flex space-x-4 py-2">
               <Button variant="ghost" size="icon" aria-label="Search">
                 <Search className="h-5 w-5" />
               </Button>
               <Button variant="ghost" size="icon" aria-label="Wishlist">
                 <Heart className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" aria-label="Account">
-                <User className="h-5 w-5" />
               </Button>
             </div>
           </nav>
