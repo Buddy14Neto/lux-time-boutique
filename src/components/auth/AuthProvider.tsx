@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,49 +32,73 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Função para buscar o perfil do usuário a partir de um ID
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      console.log(`[AuthProvider] Fetching profile for user: ${userId}`);
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('[AuthProvider] Error fetching profile:', error);
+        setUser(null);
+        return null;
+      }
+
+      if (profile) {
+        console.log(`[AuthProvider] Profile found for user ${userId}, admin status: ${profile.is_admin}`);
+        const authUser = {
+          id: userId,
+          email: profile.email || '',
+          name: profile.name || '',
+          role: profile.role || 'user',
+          isAdmin: profile.is_admin || false
+        };
+        setUser(authUser);
+        return authUser;
+      } else {
+        console.log(`[AuthProvider] No profile found for user ${userId}`);
+        setUser(null);
+        return null;
+      }
+    } catch (error) {
+      console.error('[AuthProvider] Error fetching user profile:', error);
+      setUser(null);
+      return null;
+    }
+  };
+
   useEffect(() => {
     console.log("[AuthProvider] Initializing...");
+    let mounted = true;
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log(`[AuthProvider] Auth state changed: ${event}`, session?.user?.id);
-        setSession(session);
+      async (event, newSession) => {
+        console.log(`[AuthProvider] Auth state changed: ${event}`, newSession?.user?.id);
         
-        if (session?.user) {
-          try {
-            console.log(`[AuthProvider] Fetching profile for user: ${session.user.id}`);
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (error) {
-              console.error('[AuthProvider] Error fetching profile:', error);
-              setUser(null);
-              return;
-            }
-
-            if (profile) {
-              console.log(`[AuthProvider] Profile found for user ${session.user.id}, admin status: ${profile.is_admin}`);
-              setUser({
-                id: session.user.id,
-                email: session.user.email!,
-                name: profile.name || '',
-                role: profile.role || 'user',
-                isAdmin: profile.is_admin || false
-              });
-            } else {
-              console.log(`[AuthProvider] No profile found for user ${session.user.id}`);
-              setUser(null);
-            }
-          } catch (error) {
-            console.error('[AuthProvider] Error in onAuthStateChange handler:', error);
-            setUser(null);
-          }
+        if (!mounted) return;
+        
+        // Update session state immediately
+        setSession(newSession);
+        
+        if (event === 'SIGNED_OUT') {
+          console.log('[AuthProvider] User signed out, resetting user to null');
+          setUser(null);
+          return;
+        }
+        
+        if (newSession?.user) {
+          // Defer the profile fetch slightly to avoid Supabase call recursion
+          setTimeout(async () => {
+            if (!mounted) return;
+            await fetchUserProfile(newSession.user!.id);
+          }, 0);
         } else {
-          console.log('[AuthProvider] No session, resetting user to null');
+          console.log('[AuthProvider] No session user, resetting user to null');
           setUser(null);
         }
       }
@@ -85,59 +108,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkSession = async () => {
       try {
         console.log('[AuthProvider] Checking for existing session...');
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        console.log(`[AuthProvider] Existing session found: ${!!session}`, session?.user?.id);
-        setSession(session);
+        if (!mounted) return;
         
-        if (session?.user) {
-          try {
-            console.log(`[AuthProvider] Fetching profile for existing session user: ${session.user.id}`);
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-              
-            if (error) {
-              console.error('[AuthProvider] Error fetching profile for existing session:', error);
-              setUser(null);
-              setIsLoading(false);
-              return;
-            }
-
-            if (profile) {
-              console.log(`[AuthProvider] Profile for existing session found, admin status: ${profile.is_admin}`);
-              setUser({
-                id: session.user.id,
-                email: session.user.email!,
-                name: profile.name || '',
-                role: profile.role || 'user',
-                isAdmin: profile.is_admin || false
-              });
-            } else {
-              console.log('[AuthProvider] No profile found for existing session user');
-              setUser(null);
-            }
-          } catch (error) {
-            console.error('[AuthProvider] Error in checkSession:', error);
-            setUser(null);
-          } finally {
-            setIsLoading(false);
-          }
+        console.log(`[AuthProvider] Existing session found: ${!!currentSession}`, currentSession?.user?.id);
+        // Update session state immediately
+        setSession(currentSession);
+        
+        if (currentSession?.user) {
+          // Fetch user profile
+          await fetchUserProfile(currentSession.user.id);
         } else {
           console.log('[AuthProvider] No existing session found');
-          setIsLoading(false);
+          setUser(null);
         }
       } catch (error) {
         console.error('[AuthProvider] Error getting session:', error);
-        setIsLoading(false);
+        if (mounted) setUser(null);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     };
     
     checkSession();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -164,25 +161,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // After successful login, immediately check for admin status
       if (data.user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('is_admin, name, role')
-          .eq('id', data.user.id)
-          .single();
-          
-        if (profileError) {
-          console.error('[AuthProvider] Error fetching profile after login:', profileError);
-        } else if (profile) {
-          console.log(`[AuthProvider] Profile after login, admin status: ${profile.is_admin}, name: ${profile.name}`);
-          
-          // Explicitly set the user state here to ensure it's updated immediately
-          setUser({
-            id: data.user.id,
-            email: data.user.email!,
-            name: profile.name || '',
-            role: profile.role || 'user',
-            isAdmin: profile.is_admin || false
+        const profile = await fetchUserProfile(data.user.id);
+        
+        if (profile) {
+          console.log(`[AuthProvider] User profile after login: ${JSON.stringify(profile)}`);
+          toast({
+            title: "Login realizado com sucesso",
+            description: `Bem-vindo de volta, ${profile.name || 'Usuário'}!`,
           });
+          return true;
         }
       }
 
