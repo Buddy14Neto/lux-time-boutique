@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +24,7 @@ import ProdutoForm from "./pages/admin/ProdutoForm";
 import AdminPedidos from "./pages/admin/Pedidos";
 import AdminUsuarios from "./pages/admin/Usuarios";
 import AdminConfiguracoes from "./pages/admin/Configuracoes";
+import AdminLogin from "./pages/admin/Login";
 
 const queryClient = new QueryClient();
 
@@ -50,7 +52,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
   
   if (!isAdmin) {
@@ -58,10 +60,6 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   return <>{children}</>;
-};
-
-const AdminLogin = () => {
-  return <div>Admin Login Page</div>;
 };
 
 const App = () => (
