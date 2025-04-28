@@ -199,9 +199,28 @@ export default function ProdutoForm() {
         imageUrls = [...imageUrls, ...uploadedUrls];
       }
 
-      // Prepara os dados para salvar
+      // Prepara os dados para salvar - garantindo que todos os campos requeridos estejam presentes
       const productData = {
-        ...data,
+        name: data.name,
+        brand: data.brand,
+        price: data.price,
+        discount_price: data.discount_price,
+        description: data.description,
+        short_description: data.short_description,
+        featured: data.featured,
+        bestseller: data.bestseller,
+        new_arrival: data.new_arrival,
+        reference: data.reference,
+        case_material: data.case_material,
+        case_diameter: data.case_diameter,
+        movement: data.movement,
+        power_reserve: data.power_reserve,
+        water_resistance: data.water_resistance,
+        crystal: data.crystal,
+        dial_color: data.dial_color,
+        strap_material: data.strap_material,
+        functions: data.functions,
+        style: data.style,
         images: imageUrls,
       };
 
@@ -214,7 +233,7 @@ export default function ProdutoForm() {
           .update(productData)
           .eq('id', id);
       } else {
-        // Insere um novo produto - Corrigido: passando um único objeto dentro de um array
+        // Insere um novo produto
         result = await supabase
           .from('products')
           .insert(productData);
