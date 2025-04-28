@@ -64,11 +64,9 @@ interface OrderItem {
   product_brand?: string;
 }
 
-interface OrderWithUserDetails extends Order {
-  profiles: {
-    name: string;
-    email: string;
-  };
+interface UserProfile {
+  name: string;
+  email: string;
 }
 
 export default function AdminPedidos() {
@@ -104,7 +102,7 @@ export default function AdminPedidos() {
       }
 
       // Transform data to include user details
-      const ordersWithUserDetails: Order[] = (data as OrderWithUserDetails[]).map(order => ({
+      const ordersWithUserDetails: Order[] = data.map((order: any) => ({
         ...order,
         user_name: order.profiles?.name || 'Usuário Desconhecido',
         user_email: order.profiles?.email || 'email@desconhecido.com'
@@ -288,11 +286,11 @@ export default function AdminPedidos() {
       case 'shipped':
         return 'default';
       case 'delivered':
-        return 'success';
+        return 'default'; // Mudado para default em vez de success
       case 'cancelled':
         return 'destructive';
       case 'refunded':
-        return 'warning';
+        return 'outline'; // Mudado para outline em vez de warning
       default:
         return 'outline';
     }
@@ -350,9 +348,8 @@ export default function AdminPedidos() {
                 </div>
               </TableHead>
               <TableHead 
-                className="cursor-pointer" 
+                className="cursor-pointer text-right" 
                 onClick={() => handleSort('total')}
-                className="text-right"
               >
                 <div className="flex items-center justify-end">
                   Total <SortIcon column="total" />

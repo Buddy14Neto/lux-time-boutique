@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -21,18 +21,25 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 // Define form schema with Zod
 const formSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Por favor, insira um email válido"),
+  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
 });
 
 // Type based on the schema
 type FormData = z.infer<typeof formSchema>;
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from || "/dashboard";
+  const from = (location.state as any)?.from || (isAdmin ? "/admin" : "/dashboard");
+
+  useEffect(() => {
+    // Redireciona para o painel apropriado se já estiver autenticado
+    if (isAuthenticated) {
+      navigate(isAdmin ? "/admin" : "/dashboard");
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
 
   // Initialize form with react-hook-form and zod resolver
   const form = useForm<FormData>({
@@ -60,7 +67,7 @@ const Login = () => {
             <CardHeader>
               <CardTitle className="font-playfair text-2xl text-center">Login</CardTitle>
               <CardDescription className="text-center">
-                Enter your credentials to access your account
+                Entre com suas credenciais para acessar sua conta
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -73,7 +80,7 @@ const Login = () => {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="name@example.com" {...field} />
+                          <Input placeholder="nome@exemplo.com" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -85,7 +92,7 @@ const Login = () => {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel>Senha</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="••••••••" {...field} />
                         </FormControl>
@@ -99,7 +106,7 @@ const Login = () => {
                     className="w-full bg-gold-DEFAULT hover:bg-gold-dark text-white"
                     disabled={form.formState.isSubmitting}
                   >
-                    {form.formState.isSubmitting ? "Logging in..." : "Log in"}
+                    {form.formState.isSubmitting ? "Entrando..." : "Entrar"}
                   </Button>
                 </form>
               </Form>
@@ -107,17 +114,16 @@ const Login = () => {
             <CardFooter className="flex flex-col items-center">
               <div className="text-center text-sm">
                 <p className="text-muted-foreground mb-2">
-                  Don't have an account?{" "}
+                  Ainda não tem uma conta?{" "}
                   <Link to="/register" className="text-gold-DEFAULT hover:text-gold-dark">
-                    Sign up
+                    Cadastre-se
                   </Link>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  For demo purposes, use:
-                  <br />
-                  Email: user@example.com
-                  <br />
-                  Password: password123
+                  Para fins de demonstração, use:<br />
+                  Email: admin@example.com<br />
+                  Senha: admin123<br />
+                  <span className="text-xs text-gold-DEFAULT">(Acesso de Administrador)</span>
                 </p>
               </div>
             </CardFooter>

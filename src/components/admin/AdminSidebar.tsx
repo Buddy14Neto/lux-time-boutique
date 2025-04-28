@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { 
@@ -11,10 +11,12 @@ import {
   Settings, 
   LogOut
 } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 export function AdminSidebar() {
   const { logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
@@ -50,7 +52,21 @@ export function AdminSidebar() {
   ];
 
   const handleLogout = async () => {
-    await logout();
+    try {
+      await logout();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso."
+      });
+      navigate('/login');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao fazer logout",
+        description: "Por favor, tente novamente."
+      });
+    }
   };
 
   return (

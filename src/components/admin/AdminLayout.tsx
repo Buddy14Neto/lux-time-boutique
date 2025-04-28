@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { Loader } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -14,19 +15,31 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || !isAdmin)) {
+    // Se o usuário não estiver carregando e não estiver autenticado, redireciona para o login
+    if (!isLoading && !isAuthenticated) {
       navigate('/login');
+      return;
+    }
+
+    // Se o usuário estiver autenticado, mas não for admin, redireciona para o dashboard normal
+    if (!isLoading && isAuthenticated && !isAdmin) {
+      navigate('/dashboard');
     }
   }, [isAuthenticated, isAdmin, isLoading, navigate]);
 
+  // Mostra carregando apenas durante a verificação
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="loader">Carregando...</div>
+        <div className="flex flex-col items-center">
+          <Loader className="h-8 w-8 animate-spin text-gold-DEFAULT mb-2" />
+          <p>Carregando...</p>
+        </div>
       </div>
     );
   }
 
+  // Se não estiver autenticado ou não for admin, não renderiza nada
   if (!isAuthenticated || !isAdmin) {
     return null;
   }
