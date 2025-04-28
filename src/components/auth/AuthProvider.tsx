@@ -157,14 +157,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // After successful login, immediately check for admin status
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('is_admin')
+        .select('is_admin, name')
         .eq('id', data.user?.id)
         .single();
         
       if (profileError) {
         console.error('[AuthProvider] Error fetching profile after login:', profileError);
+        return true; // Still return true as login was successful
       } else {
-        console.log(`[AuthProvider] Profile after login, admin status: ${profile?.is_admin}`);
+        console.log(`[AuthProvider] Profile after login, admin status: ${profile?.is_admin}, name: ${profile?.name}`);
+        
+        // Explicitly set the user state here as well to ensure it's updated immediately
+        if (data.user && profile) {
+          console.log('[AuthProvider] Explicitly setting user state after login');
+          setUser({
+            id: data.user.id,
+            email: data.user.email!,
+            name: profile.name || '',
+            role: profile.role || 'user',
+            isAdmin: profile.is_admin || false
+          });
+        }
       }
 
       toast({

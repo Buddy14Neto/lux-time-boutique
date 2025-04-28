@@ -28,7 +28,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const AdminLogin = () => {
-  const { login, isAuthenticated, isAdmin, user } = useAuth();
+  const { login, isAuthenticated, isAdmin, user, session } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,9 +40,15 @@ const AdminLogin = () => {
     setDebugLogs(prev => [...prev, message]);
   };
 
-  // Check if user is already authenticated and is admin
+  // Add detailed logging of all state changes
   useEffect(() => {
-    addDebugLog(`Auth state: isAuthenticated=${isAuthenticated}, isAdmin=${isAdmin}, userId=${user?.id}`);
+    addDebugLog(`Auth state updated: isAuthenticated=${isAuthenticated}, isAdmin=${isAdmin}, userId=${user?.id}`);
+    addDebugLog(`Session state: ${session ? 'active' : 'none'}, userId=${session?.user?.id}`);
+    
+    // More detailed user info if available
+    if (user) {
+      addDebugLog(`User details: email=${user.email}, name=${user.name}, isAdmin=${user.isAdmin}, role=${user.role}`);
+    }
     
     if (isAuthenticated && isAdmin) {
       addDebugLog("User is authenticated and is admin, redirecting to /admin");
@@ -56,7 +62,7 @@ const AdminLogin = () => {
       });
       navigate("/dashboard");
     }
-  }, [isAuthenticated, isAdmin, navigate, user]);
+  }, [isAuthenticated, isAdmin, navigate, user, session]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -72,6 +78,7 @@ const AdminLogin = () => {
       setLoginError(null);
       
       addDebugLog(`Attempting admin login with email: ${data.email}`);
+      addDebugLog(`Starting auth state: isAuthenticated=${isAuthenticated}, isAdmin=${isAdmin}`);
       
       // First perform the login
       addDebugLog("Calling login function");
@@ -91,27 +98,35 @@ const AdminLogin = () => {
       }
       
       addDebugLog("Login successful, checking admin status");
-      addDebugLog(`Current user ID from context: ${user?.id}`);
       
-      // Check admin status directly from the database after login
-      if (!user?.id) {
-        addDebugLog("ERROR: User ID is undefined after successful login");
+      // Check if the user context has updated immediately (it might not have)
+      addDebugLog(`Current user ID from context: ${user?.id || 'not set yet'}`);
+      addDebugLog(`Current isAdmin from context: ${isAdmin}`);
+      
+      // Direct check from database to avoid race conditions with context
+      // Get current user ID directly from Supabase to avoid race conditions
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        addDebugLog("ERROR: Could not get current user from Supabase");
         setLoginError("Erro ao verificar sessão de usuário. Tente novamente em alguns instantes.");
         setIsLoading(false);
         return;
       }
       
-      addDebugLog(`Fetching admin status for user ID: ${user.id}`);
+      addDebugLog(`Current user from Supabase: ${currentUser.id}`);
+      
+      // Direct database check for admin status
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('is_admin, name')
-        .eq('id', user.id)
+        .eq('id', currentUser.id)
         .single();
       
-      addDebugLog(`Supabase query result: ${JSON.stringify({ profile, error })}`);
+      addDebugLog(`Direct database check result: ${JSON.stringify({ profile, error })}`);
       
       if (error) {
-        addDebugLog(`Error fetching admin status: ${error.message}`);
+        addDebugLog(`Error fetching admin status directly: ${error.message}`);
         toast({
           variant: "destructive",
           title: "Erro no login",
@@ -128,6 +143,7 @@ const AdminLogin = () => {
           title: "Login realizado com sucesso",
           description: `Bem-vindo ao painel administrativo, ${profile.name || 'Administrador'}!`,
         });
+        // We'll force navigate even if the context hasn't updated yet
         navigate("/admin");
       } else {
         addDebugLog("User is NOT an admin, showing error");
@@ -137,6 +153,7 @@ const AdminLogin = () => {
           description: "Sua conta não tem privilégios administrativos.",
         });
         setLoginError("Esta conta não possui privilégios administrativos.");
+        setIsLoading(false);
       }
     } catch (error: any) {
       addDebugLog(`Error in login process: ${error?.message || 'Unknown error'}`);
@@ -147,7 +164,6 @@ const AdminLogin = () => {
         description: "Ocorreu um erro ao processar o login.",
       });
       setLoginError(`Ocorreu um erro ao processar o login: ${error?.message || 'Tente novamente.'}`);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -246,19 +262,17 @@ const AdminLogin = () => {
                   </div>
                 </div>
                 
-                {/* Debug logs for admin */}
-                {debugLogs.length > 0 && (
-                  <div className="mt-6 border border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
-                    <p className="font-bold text-amber-800 dark:text-amber-400 mb-1">Logs de depuração:</p>
-                    <div className="text-xs font-mono text-amber-700 dark:text-amber-300 max-h-40 overflow-auto">
-                      {debugLogs.map((log, i) => (
-                        <div key={i} className="py-0.5 border-b border-amber-100 dark:border-amber-800/30">
-                          {log}
-                        </div>
-                      ))}
-                    </div>
+                {/* Debug logs shown on screen for easier troubleshooting */}
+                <div className="mt-6 border border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
+                  <p className="font-bold text-amber-800 dark:text-amber-400 mb-1">Logs de depuração:</p>
+                  <div className="text-xs font-mono text-amber-700 dark:text-amber-300 max-h-40 overflow-auto">
+                    {debugLogs.map((log, i) => (
+                      <div key={i} className="py-0.5 border-b border-amber-100 dark:border-amber-800/30">
+                        {log}
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
               </form>
             </Form>
           </CardContent>
