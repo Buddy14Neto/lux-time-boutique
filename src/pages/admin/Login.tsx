@@ -92,9 +92,10 @@ const AdminLogin = () => {
       setIsVerifyingAdmin(true);
       
       // Add a timeout as fallback in case the auth state doesn't update
-      setTimeout(() => {
+      setTimeout(async () => {
         setIsLoading(false);
-        const { data: { user } } = supabase.auth.getUser();
+        // Fix: Use await to properly resolve the Promise before accessing its data property
+        const { data: { user } } = await supabase.auth.getUser();
         if (user && !isAdmin) {
           setLoginError("Verificação de administrador em andamento. Aguarde...");
         }
