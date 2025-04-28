@@ -53,6 +53,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (error) {
               console.error('[AuthProvider] Error fetching profile:', error);
+              setUser(null);
+              return;
             }
 
             if (profile) {
@@ -70,6 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
           } catch (error) {
             console.error('[AuthProvider] Error in onAuthStateChange handler:', error);
+            setUser(null);
           }
         } else {
           console.log('[AuthProvider] No session, resetting user to null');
@@ -98,6 +101,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               
             if (error) {
               console.error('[AuthProvider] Error fetching profile for existing session:', error);
+              setUser(null);
+              setIsLoading(false);
+              return;
             }
 
             if (profile) {
@@ -111,9 +117,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               });
             } else {
               console.log('[AuthProvider] No profile found for existing session user');
+              setUser(null);
             }
           } catch (error) {
             console.error('[AuthProvider] Error in checkSession:', error);
+            setUser(null);
           } finally {
             setIsLoading(false);
           }
@@ -155,21 +163,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('[AuthProvider] Login successful, session established:', data.session?.user?.id);
       
       // After successful login, immediately check for admin status
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_admin, name')
-        .eq('id', data.user?.id)
-        .single();
-        
-      if (profileError) {
-        console.error('[AuthProvider] Error fetching profile after login:', profileError);
-        return true; // Still return true as login was successful
-      } else {
-        console.log(`[AuthProvider] Profile after login, admin status: ${profile?.is_admin}, name: ${profile?.name}`);
-        
-        // Explicitly set the user state here as well to ensure it's updated immediately
-        if (data.user && profile) {
-          console.log('[AuthProvider] Explicitly setting user state after login');
+      if (data.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin, name, role')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('[AuthProvider] Error fetching profile after login:', profileError);
+        } else if (profile) {
+          console.log(`[AuthProvider] Profile after login, admin status: ${profile.is_admin}, name: ${profile.name}`);
+          
+          // Explicitly set the user state here to ensure it's updated immediately
           setUser({
             id: data.user.id,
             email: data.user.email!,

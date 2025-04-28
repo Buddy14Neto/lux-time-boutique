@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Form,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formSchema = z.object({
   email: z.string().email("Por favor, insira um email válido"),
@@ -34,6 +35,7 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [userChecked, setUserChecked] = useState(false);
 
   const addDebugLog = (message: string) => {
     console.log(`[AdminLogin Debug] ${message}`);
@@ -49,11 +51,17 @@ const AdminLogin = () => {
     if (user) {
       addDebugLog(`User details: email=${user.email}, name=${user.name}, isAdmin=${user.isAdmin}, role=${user.role}`);
     }
+
+    // Check if we have a session but not a fully authenticated user yet
+    if (session?.user?.id && !isAuthenticated && !userChecked) {
+      addDebugLog("Session exists but user not authenticated yet, checking admin status directly");
+      checkAdminStatus(session.user.id);
+    }
     
     if (isAuthenticated && isAdmin) {
       addDebugLog("User is authenticated and is admin, redirecting to /admin");
       navigate("/admin");
-    } else if (isAuthenticated && !isAdmin) {
+    } else if (isAuthenticated && !isAdmin && userChecked) {
       addDebugLog("User is authenticated but NOT admin, showing error toast");
       toast({
         variant: "destructive",
@@ -62,7 +70,42 @@ const AdminLogin = () => {
       });
       navigate("/dashboard");
     }
-  }, [isAuthenticated, isAdmin, navigate, user, session]);
+  }, [isAuthenticated, isAdmin, navigate, user, session, userChecked]);
+
+  // Direct check for admin status when we have a session but no user object yet
+  const checkAdminStatus = async (userId: string) => {
+    try {
+      addDebugLog(`Directly checking admin status for user: ${userId}`);
+      setUserChecked(true);
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_admin, name, role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        addDebugLog(`Error checking admin status: ${error.message}`);
+        return;
+      }
+      
+      if (profile?.is_admin) {
+        addDebugLog(`User confirmed as admin directly: ${profile.name}`);
+        // Force navigation to admin even if context hasn't updated
+        navigate("/admin");
+      } else {
+        addDebugLog("User is NOT an admin (direct check)");
+        toast({
+          variant: "destructive",
+          title: "Acesso negado",
+          description: "Sua conta não tem privilégios administrativos.",
+        });
+        setLoginError("Esta conta não possui privilégios administrativos.");
+      }
+    } catch (error: any) {
+      addDebugLog(`Error in direct admin check: ${error?.message}`);
+    }
+  };
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -76,6 +119,7 @@ const AdminLogin = () => {
     try {
       setIsLoading(true);
       setLoginError(null);
+      setUserChecked(false);
       
       addDebugLog(`Attempting admin login with email: ${data.email}`);
       addDebugLog(`Starting auth state: isAuthenticated=${isAuthenticated}, isAdmin=${isAdmin}`);
@@ -99,11 +143,6 @@ const AdminLogin = () => {
       
       addDebugLog("Login successful, checking admin status");
       
-      // Check if the user context has updated immediately (it might not have)
-      addDebugLog(`Current user ID from context: ${user?.id || 'not set yet'}`);
-      addDebugLog(`Current isAdmin from context: ${isAdmin}`);
-      
-      // Direct check from database to avoid race conditions with context
       // Get current user ID directly from Supabase to avoid race conditions
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
@@ -115,6 +154,7 @@ const AdminLogin = () => {
       }
       
       addDebugLog(`Current user from Supabase: ${currentUser.id}`);
+      setUserChecked(true);
       
       // Direct database check for admin status
       const { data: profile, error } = await supabase
@@ -153,7 +193,6 @@ const AdminLogin = () => {
           description: "Sua conta não tem privilégios administrativos.",
         });
         setLoginError("Esta conta não possui privilégios administrativos.");
-        setIsLoading(false);
       }
     } catch (error: any) {
       addDebugLog(`Error in login process: ${error?.message || 'Unknown error'}`);
@@ -164,6 +203,7 @@ const AdminLogin = () => {
         description: "Ocorreu um erro ao processar o login.",
       });
       setLoginError(`Ocorreu um erro ao processar o login: ${error?.message || 'Tente novamente.'}`);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -187,6 +227,15 @@ const AdminLogin = () => {
             </p>
           </CardHeader>
           <CardContent className="pt-6">
+            {session && !user && !loginError && (
+              <Alert className="mb-4 bg-amber-50 dark:bg-amber-900/30 border-amber-300">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertDescription className="text-amber-800 dark:text-amber-300">
+                  Verificando sessão e permissões administrativas...
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <FormField
@@ -197,7 +246,7 @@ const AdminLogin = () => {
                       <FormLabel className="text-foreground">Email</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="admin@example.com" 
+                          placeholder="helioarreche@gmail.com" 
                           type="email"
                           className="border-gold-light/50 focus-visible:ring-gold-DEFAULT" 
                           {...field} 
