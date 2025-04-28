@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,14 @@ import { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableC
 import { Search, Loader, PenLine, Trash2, Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/toast';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -137,7 +143,7 @@ export default function AdminProdutos() {
       product.name.toLowerCase().includes(searchLower) ||
       product.brand.toLowerCase().includes(searchLower) ||
       product.reference.toLowerCase().includes(searchLower) ||
-      product.short_description.toLowerCase().includes(searchLower)
+      product.short_description.toLowerCase().includes(searchTerm)
     );
   });
 
@@ -148,171 +154,195 @@ export default function AdminProdutos() {
     }).format(price);
   };
 
-  const SortIcon = ({ column }: { column: string }) => {
-    if (sortBy !== column) return null;
-    
-    return sortDir === 'asc' ? 
-      <ArrowUp className="h-4 w-4 ml-1" /> : 
-      <ArrowDown className="h-4 w-4 ml-1" />;
-  };
-
   return (
     <AdminLayout title="Gerenciar Produtos">
-      <div className="flex justify-between items-center mb-6">
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar produtos por nome, marca..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <Button onClick={() => navigate('/admin/produtos/novo')} className="ml-4 bg-gold-DEFAULT hover:bg-gold-dark">
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Produto
-        </Button>
-      </div>
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-2xl font-bold">Produtos</CardTitle>
+          <CardDescription>
+            Gerencie o catálogo de produtos da sua loja
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between items-center space-x-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar produtos por nome, marca..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Button 
+              onClick={() => navigate('/admin/produtos/novo')} 
+              className="bg-gold-DEFAULT hover:bg-gold-dark text-white font-medium flex items-center gap-2 min-w-[140px] justify-center"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Produto
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Imagem</TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort('name')}
-              >
-                <div className="flex items-center">
-                  Produto <SortIcon column="name" />
-                </div>
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort('brand')}
-              >
-                <div className="flex items-center">
-                  Marca <SortIcon column="brand" />
-                </div>
-              </TableHead>
-              <TableHead className="hidden md:table-cell">
-                Referência
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer text-right" 
-                onClick={() => handleSort('price')}
-              >
-                <div className="flex items-center justify-end">
-                  Preço <SortIcon column="price" />
-                </div>
-              </TableHead>
-              <TableHead>Destaque</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  <div className="flex justify-center items-center space-x-2">
-                    <Loader className="h-5 w-5 animate-spin text-gold-DEFAULT" />
-                    <span>Carregando produtos...</span>
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[100px]">Imagem</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:text-gold-DEFAULT transition-colors" 
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center">
+                    Produto {sortBy === 'name' && (sortDir === 'asc' ? <ArrowUp className="h-4 w-4 ml-1" /> : <ArrowDown className="h-4 w-4 ml-1" />)}
                   </div>
-                </TableCell>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:text-gold-DEFAULT transition-colors" 
+                  onClick={() => handleSort('brand')}
+                >
+                  <div className="flex items-center">
+                    Marca {sortBy === 'brand' && (sortDir === 'asc' ? <ArrowUp className="h-4 w-4 ml-1" /> : <ArrowDown className="h-4 w-4 ml-1" />)}
+                  </div>
+                </TableHead>
+                <TableHead className="hidden md:table-cell">Referência</TableHead>
+                <TableHead 
+                  className="cursor-pointer text-right hover:text-gold-DEFAULT transition-colors" 
+                  onClick={() => handleSort('price')}
+                >
+                  <div className="flex items-center justify-end">
+                    Preço {sortBy === 'price' && (sortDir === 'asc' ? <ArrowUp className="h-4 w-4 ml-1" /> : <ArrowDown className="h-4 w-4 ml-1" />)}
+                  </div>
+                </TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
-            ) : filteredProducts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  {searchTerm ? 'Nenhum produto corresponde à sua pesquisa.' : 'Nenhum produto encontrado.'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>
-                    {product.images && product.images.length > 0 ? (
-                      <img 
-                        src={product.images[0]} 
-                        alt={product.name}
-                        className="h-14 w-14 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="h-14 w-14 bg-muted rounded flex items-center justify-center text-muted-foreground">
-                        Sem imagem
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium truncate max-w-[200px]">{product.name}</div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                        {product.short_description}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{product.brand}</TableCell>
-                  <TableCell className="hidden md:table-cell">{product.reference}</TableCell>
-                  <TableCell className="text-right">
-                    {product.discount_price ? (
-                      <div>
-                        <span className="text-muted-foreground line-through text-xs">
-                          {formatPrice(product.price)}
-                        </span>
-                        <div className="font-medium text-destructive">
-                          {formatPrice(product.discount_price)}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="font-medium">
-                        {formatPrice(product.price)}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {product.featured && <Badge variant="default" className="bg-gold-DEFAULT hover:bg-gold-dark">Destaque</Badge>}
-                      {product.bestseller && <Badge variant="outline" className="border-gold-DEFAULT text-gold-DEFAULT">Mais Vendido</Badge>}
-                      {product.new_arrival && <Badge variant="secondary">Novidade</Badge>}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-1">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditProduct(product.id)}>
-                        <PenLine className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(product.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-32">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Loader className="h-8 w-8 animate-spin text-gold-DEFAULT" />
+                      <span className="text-sm text-muted-foreground">Carregando produtos...</span>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell colSpan={7} className="text-right">
-                Total: {filteredProducts.length} produtos
-              </TableCell>
-            </TableRow>
-          </TableFooter>
-        </Table>
-      </div>
+              ) : filteredProducts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-32">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <p className="text-sm">
+                        {searchTerm ? 'Nenhum produto corresponde à sua pesquisa.' : 'Nenhum produto encontrado.'}
+                      </p>
+                      {!searchTerm && (
+                        <Button 
+                          variant="link" 
+                          className="mt-2 text-gold-DEFAULT hover:text-gold-dark"
+                          onClick={() => navigate('/admin/produtos/novo')}
+                        >
+                          Adicionar produto
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredProducts.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      {product.images && product.images.length > 0 ? (
+                        <img 
+                          src={product.images[0]} 
+                          alt={product.name}
+                          className="h-14 w-14 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="h-14 w-14 bg-muted rounded flex items-center justify-center text-muted-foreground">
+                          Sem imagem
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium truncate max-w-[200px]">{product.name}</div>
+                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          {product.short_description}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{product.brand}</TableCell>
+                    <TableCell className="hidden md:table-cell">{product.reference}</TableCell>
+                    <TableCell className="text-right">
+                      {product.discount_price ? (
+                        <div>
+                          <span className="text-muted-foreground line-through text-xs">
+                            {formatPrice(product.price)}
+                          </span>
+                          <div className="font-medium text-destructive">
+                            {formatPrice(product.discount_price)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="font-medium">
+                          {formatPrice(product.price)}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {product.featured && <Badge variant="default" className="bg-gold-DEFAULT hover:bg-gold-dark">Destaque</Badge>}
+                        {product.bestseller && <Badge variant="outline" className="border-gold-DEFAULT text-gold-DEFAULT">Mais Vendido</Badge>}
+                        {product.new_arrival && <Badge variant="secondary">Novidade</Badge>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditProduct(product.id)}>
+                          <PenLine className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(product.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={7} className="text-right text-sm">
+                  {filteredProducts.length} {filteredProducts.length === 1 ? 'produto' : 'produtos'} encontrados
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </CardContent>
+      </Card>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação não pode ser desfeita. O produto será permanentemente excluído do sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDeleteCancel} disabled={deletingProduct}>Cancelar</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel 
+              onClick={handleDeleteCancel} 
+              disabled={deletingProduct}
+              className="transition-colors"
+            >
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteConfirm}
               disabled={deletingProduct}
-              className="bg-destructive hover:bg-destructive/90"
+              className="bg-destructive hover:bg-destructive/90 transition-colors"
             >
               {deletingProduct ? (
                 <>
