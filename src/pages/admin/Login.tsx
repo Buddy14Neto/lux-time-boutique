@@ -43,6 +43,7 @@ const AdminLogin = () => {
   const onSubmit = async (data: FormData) => {
     try {
       setIsLoading(true);
+      console.log("Attempting login with:", data.email);
       const success = await login(data.email, data.password);
       
       if (success) {
@@ -63,7 +64,7 @@ const AdminLogin = () => {
       toast({
         variant: "destructive",
         title: "Erro no login",
-        description: "Credenciais inválidas. Por favor, tente novamente.",
+        description: "Ocorreu um erro durante o login. Por favor, tente novamente.",
       });
     } finally {
       setIsLoading(false);
@@ -142,7 +143,7 @@ const AdminLogin = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full bg-gold-dark hover:bg-gold-DEFAULT text-white font-medium py-2.5"
+                  className="w-full bg-gold-DEFAULT hover:bg-gold-dark text-white font-medium py-2.5"
                   disabled={isLoading}
                 >
                   {isLoading ? "Entrando..." : "Entrar"}
