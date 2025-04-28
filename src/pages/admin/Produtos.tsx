@@ -6,7 +6,7 @@ import { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableC
 import { Search, Loader, PenLine, Trash2, Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/hooks/use-toast';
 import {
   Card,
   CardContent,
