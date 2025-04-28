@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -27,10 +27,25 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const AdminLogin = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  // Check if user is already authenticated and is admin
+  useEffect(() => {
+    if (isAuthenticated && isAdmin) {
+      navigate("/admin");
+    } else if (isAuthenticated && !isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Acesso negado",
+        description: "Sua conta não tem privilégios administrativos.",
+      });
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -43,29 +58,52 @@ const AdminLogin = () => {
   const onSubmit = async (data: FormData) => {
     try {
       setIsLoading(true);
+      setLoginError(null);
+      
+      console.log("Attempting admin login with:", data.email);
       const success = await login(data.email, data.password);
       
       if (success) {
-        toast({
-          title: "Login realizado com sucesso",
-          description: "Bem-vindo ao painel administrativo!",
-        });
-        navigate("/admin");
+        console.log("Login successful, checking admin status...");
+        // Check admin status after successful login
+        setTimeout(() => {
+          // We use setTimeout to allow the auth state to update first
+          if (isAdmin) {
+            console.log("User is admin, redirecting to admin dashboard");
+            toast({
+              title: "Login realizado com sucesso",
+              description: "Bem-vindo ao painel administrativo!",
+            });
+            navigate("/admin");
+          } else {
+            console.log("User is not admin, showing error");
+            toast({
+              variant: "destructive",
+              title: "Acesso negado",
+              description: "Sua conta não tem privilégios administrativos.",
+            });
+            setLoginError("Esta conta não possui privilégios administrativos.");
+          }
+          setIsLoading(false);
+        }, 1000);
       } else {
+        console.log("Login failed");
         toast({
           variant: "destructive",
           title: "Erro no login",
           description: "Credenciais inválidas. Por favor, tente novamente.",
         });
+        setLoginError("Credenciais inválidas. Por favor, tente novamente.");
+        setIsLoading(false);
       }
     } catch (error) {
       console.error("Erro no login:", error);
       toast({
         variant: "destructive",
         title: "Erro no login",
-        description: "Credenciais inválidas. Por favor, tente novamente.",
+        description: "Ocorreu um erro ao processar o login.",
       });
-    } finally {
+      setLoginError("Ocorreu um erro ao processar o login. Tente novamente.");
       setIsLoading(false);
     }
   };
@@ -139,6 +177,12 @@ const AdminLogin = () => {
                     </FormItem>
                   )}
                 />
+                
+                {loginError && (
+                  <div className="p-3 text-sm font-medium text-destructive bg-destructive/10 rounded-md">
+                    {loginError}
+                  </div>
+                )}
                 
                 <Button 
                   type="submit" 
