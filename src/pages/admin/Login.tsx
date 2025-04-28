@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Form,
   FormControl,
@@ -27,7 +28,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const AdminLogin = () => {
-  const { login, isAuthenticated, isAdmin } = useAuth();
+  const { login, isAuthenticated, isAdmin, user } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,32 +62,11 @@ const AdminLogin = () => {
       setLoginError(null);
       
       console.log("Attempting admin login with:", data.email);
+      
+      // First perform the login
       const success = await login(data.email, data.password);
       
-      if (success) {
-        console.log("Login successful, checking admin status...");
-        // Check admin status after successful login
-        setTimeout(() => {
-          // We use setTimeout to allow the auth state to update first
-          if (isAdmin) {
-            console.log("User is admin, redirecting to admin dashboard");
-            toast({
-              title: "Login realizado com sucesso",
-              description: "Bem-vindo ao painel administrativo!",
-            });
-            navigate("/admin");
-          } else {
-            console.log("User is not admin, showing error");
-            toast({
-              variant: "destructive",
-              title: "Acesso negado",
-              description: "Sua conta não tem privilégios administrativos.",
-            });
-            setLoginError("Esta conta não possui privilégios administrativos.");
-          }
-          setIsLoading(false);
-        }, 1000);
-      } else {
+      if (!success) {
         console.log("Login failed");
         toast({
           variant: "destructive",
@@ -95,6 +75,45 @@ const AdminLogin = () => {
         });
         setLoginError("Credenciais inválidas. Por favor, tente novamente.");
         setIsLoading(false);
+        return;
+      }
+      
+      console.log("Login successful, checking admin status...");
+      
+      // Check admin status directly from the database after login
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user?.id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching admin status:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro no login",
+          description: "Erro ao verificar privilégios administrativos.",
+        });
+        setLoginError("Erro ao verificar privilégios administrativos.");
+        setIsLoading(false);
+        return;
+      }
+      
+      if (profile?.is_admin) {
+        console.log("User is admin, redirecting to admin dashboard");
+        toast({
+          title: "Login realizado com sucesso",
+          description: "Bem-vindo ao painel administrativo!",
+        });
+        navigate("/admin");
+      } else {
+        console.log("User is not admin, showing error");
+        toast({
+          variant: "destructive",
+          title: "Acesso negado",
+          description: "Sua conta não tem privilégios administrativos.",
+        });
+        setLoginError("Esta conta não possui privilégios administrativos.");
       }
     } catch (error) {
       console.error("Erro no login:", error);
@@ -104,6 +123,7 @@ const AdminLogin = () => {
         description: "Ocorreu um erro ao processar o login.",
       });
       setLoginError("Ocorreu um erro ao processar o login. Tente novamente.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -197,8 +217,8 @@ const AdminLogin = () => {
                     Acesso de demonstração:
                   </p>
                   <div className="mt-2 text-center text-sm">
-                    <p className="text-muted-foreground">Email: admin@example.com</p>
-                    <p className="text-muted-foreground">Senha: admin123</p>
+                    <p className="text-muted-foreground">Email: helioarreche@gmail.com</p>
+                    <p className="text-muted-foreground">Senha: 300323</p>
                   </div>
                 </div>
               </form>
