@@ -34,20 +34,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log("[AuthProvider] Initializing...");
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log(`[AuthProvider] Auth state changed: ${event}`, session?.user?.id);
         setSession(session);
         
         if (session?.user) {
           try {
-            const { data: profile } = await supabase
+            console.log(`[AuthProvider] Fetching profile for user: ${session.user.id}`);
+            const { data: profile, error } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
               .single();
 
+            if (error) {
+              console.error('[AuthProvider] Error fetching profile:', error);
+            }
+
             if (profile) {
+              console.log(`[AuthProvider] Profile found for user ${session.user.id}, admin status: ${profile.is_admin}`);
               setUser({
                 id: session.user.id,
                 email: session.user.email!,
@@ -55,11 +64,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 role: profile.role || 'user',
                 isAdmin: profile.is_admin || false
               });
+            } else {
+              console.log(`[AuthProvider] No profile found for user ${session.user.id}`);
+              setUser(null);
             }
           } catch (error) {
-            console.error('Error fetching user profile:', error);
+            console.error('[AuthProvider] Error in onAuthStateChange handler:', error);
           }
         } else {
+          console.log('[AuthProvider] No session, resetting user to null');
           setUser(null);
         }
       }
@@ -68,19 +81,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check for existing session
     const checkSession = async () => {
       try {
+        console.log('[AuthProvider] Checking for existing session...');
         const { data: { session } } = await supabase.auth.getSession();
         
+        console.log(`[AuthProvider] Existing session found: ${!!session}`, session?.user?.id);
         setSession(session);
         
         if (session?.user) {
           try {
-            const { data: profile } = await supabase
+            console.log(`[AuthProvider] Fetching profile for existing session user: ${session.user.id}`);
+            const { data: profile, error } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
               .single();
               
+            if (error) {
+              console.error('[AuthProvider] Error fetching profile for existing session:', error);
+            }
+
             if (profile) {
+              console.log(`[AuthProvider] Profile for existing session found, admin status: ${profile.is_admin}`);
               setUser({
                 id: session.user.id,
                 email: session.user.email!,
@@ -88,17 +109,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 role: profile.role || 'user',
                 isAdmin: profile.is_admin || false
               });
+            } else {
+              console.log('[AuthProvider] No profile found for existing session user');
             }
           } catch (error) {
-            console.error('Error fetching user profile:', error);
+            console.error('[AuthProvider] Error in checkSession:', error);
           } finally {
             setIsLoading(false);
           }
         } else {
+          console.log('[AuthProvider] No existing session found');
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('Error getting session:', error);
+        console.error('[AuthProvider] Error getting session:', error);
         setIsLoading(false);
       }
     };
@@ -112,12 +136,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log(`[AuthProvider] Attempting login for: ${email}`);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('[AuthProvider] Login error:', error.message);
         toast({
           variant: "destructive",
           title: "Erro no login",
@@ -126,13 +152,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
 
+      console.log('[AuthProvider] Login successful, session established:', data.session?.user?.id);
+      
+      // After successful login, immediately check for admin status
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', data.user?.id)
+        .single();
+        
+      if (profileError) {
+        console.error('[AuthProvider] Error fetching profile after login:', profileError);
+      } else {
+        console.log(`[AuthProvider] Profile after login, admin status: ${profile?.is_admin}`);
+      }
+
       toast({
         title: "Login realizado com sucesso",
         description: "Bem-vindo de volta!",
       });
       return true;
     } catch (error) {
-      console.error("Erro no login:", error);
+      console.error("[AuthProvider] Error during login:", error);
       toast({
         variant: "destructive",
         title: "Erro no login",

@@ -33,12 +33,22 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+
+  const addDebugLog = (message: string) => {
+    console.log(`[AdminLogin Debug] ${message}`);
+    setDebugLogs(prev => [...prev, message]);
+  };
 
   // Check if user is already authenticated and is admin
   useEffect(() => {
+    addDebugLog(`Auth state: isAuthenticated=${isAuthenticated}, isAdmin=${isAdmin}, userId=${user?.id}`);
+    
     if (isAuthenticated && isAdmin) {
+      addDebugLog("User is authenticated and is admin, redirecting to /admin");
       navigate("/admin");
     } else if (isAuthenticated && !isAdmin) {
+      addDebugLog("User is authenticated but NOT admin, showing error toast");
       toast({
         variant: "destructive",
         title: "Acesso negado",
@@ -46,7 +56,7 @@ const AdminLogin = () => {
       });
       navigate("/dashboard");
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, isAdmin, navigate, user]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -61,13 +71,15 @@ const AdminLogin = () => {
       setIsLoading(true);
       setLoginError(null);
       
-      console.log("Attempting admin login with:", data.email);
+      addDebugLog(`Attempting admin login with email: ${data.email}`);
       
       // First perform the login
+      addDebugLog("Calling login function");
       const success = await login(data.email, data.password);
+      addDebugLog(`Login function returned: ${success}`);
       
       if (!success) {
-        console.log("Login failed");
+        addDebugLog("Login failed");
         toast({
           variant: "destructive",
           title: "Erro no login",
@@ -78,36 +90,47 @@ const AdminLogin = () => {
         return;
       }
       
-      console.log("Login successful, checking admin status...");
+      addDebugLog("Login successful, checking admin status");
+      addDebugLog(`Current user ID from context: ${user?.id}`);
       
       // Check admin status directly from the database after login
+      if (!user?.id) {
+        addDebugLog("ERROR: User ID is undefined after successful login");
+        setLoginError("Erro ao verificar sessão de usuário. Tente novamente em alguns instantes.");
+        setIsLoading(false);
+        return;
+      }
+      
+      addDebugLog(`Fetching admin status for user ID: ${user.id}`);
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('is_admin')
-        .eq('id', user?.id)
+        .select('is_admin, name')
+        .eq('id', user.id)
         .single();
       
+      addDebugLog(`Supabase query result: ${JSON.stringify({ profile, error })}`);
+      
       if (error) {
-        console.error("Error fetching admin status:", error);
+        addDebugLog(`Error fetching admin status: ${error.message}`);
         toast({
           variant: "destructive",
           title: "Erro no login",
           description: "Erro ao verificar privilégios administrativos.",
         });
-        setLoginError("Erro ao verificar privilégios administrativos.");
+        setLoginError(`Erro ao verificar privilégios administrativos: ${error.message}`);
         setIsLoading(false);
         return;
       }
       
       if (profile?.is_admin) {
-        console.log("User is admin, redirecting to admin dashboard");
+        addDebugLog(`User confirmed as admin (${profile.name}), redirecting to admin dashboard`);
         toast({
           title: "Login realizado com sucesso",
-          description: "Bem-vindo ao painel administrativo!",
+          description: `Bem-vindo ao painel administrativo, ${profile.name || 'Administrador'}!`,
         });
         navigate("/admin");
       } else {
-        console.log("User is not admin, showing error");
+        addDebugLog("User is NOT an admin, showing error");
         toast({
           variant: "destructive",
           title: "Acesso negado",
@@ -115,14 +138,15 @@ const AdminLogin = () => {
         });
         setLoginError("Esta conta não possui privilégios administrativos.");
       }
-    } catch (error) {
+    } catch (error: any) {
+      addDebugLog(`Error in login process: ${error?.message || 'Unknown error'}`);
       console.error("Erro no login:", error);
       toast({
         variant: "destructive",
         title: "Erro no login",
         description: "Ocorreu um erro ao processar o login.",
       });
-      setLoginError("Ocorreu um erro ao processar o login. Tente novamente.");
+      setLoginError(`Ocorreu um erro ao processar o login: ${error?.message || 'Tente novamente.'}`);
     } finally {
       setIsLoading(false);
     }
@@ -221,6 +245,20 @@ const AdminLogin = () => {
                     <p className="text-muted-foreground">Senha: 300323</p>
                   </div>
                 </div>
+                
+                {/* Debug logs for admin */}
+                {debugLogs.length > 0 && (
+                  <div className="mt-6 border border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
+                    <p className="font-bold text-amber-800 dark:text-amber-400 mb-1">Logs de depuração:</p>
+                    <div className="text-xs font-mono text-amber-700 dark:text-amber-300 max-h-40 overflow-auto">
+                      {debugLogs.map((log, i) => (
+                        <div key={i} className="py-0.5 border-b border-amber-100 dark:border-amber-800/30">
+                          {log}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </form>
             </Form>
           </CardContent>
