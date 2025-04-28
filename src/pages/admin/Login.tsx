@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Eye, EyeOff } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -28,6 +29,8 @@ type FormData = z.infer<typeof formSchema>;
 const AdminLogin = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -39,13 +42,21 @@ const AdminLogin = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
+      setIsLoading(true);
       const success = await login(data.email, data.password);
+      
       if (success) {
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao painel administrativo!",
         });
         navigate("/admin");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro no login",
+          description: "Credenciais inválidas. Por favor, tente novamente.",
+        });
       }
     } catch (error) {
       console.error("Erro no login:", error);
@@ -54,38 +65,43 @@ const AdminLogin = () => {
         title: "Erro no login",
         description: "Credenciais inválidas. Por favor, tente novamente.",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const toggleShowPassword = () => setShowPassword(!showPassword);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/30">
       <div className="w-full max-w-md px-4">
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">
+        <Card className="border-gold-light shadow-lg">
+          <CardHeader className="pb-4 space-y-2 text-center border-b border-border/30">
+            <CardTitle className="font-playfair text-3xl">
               <span className="text-foreground">Lux</span>
-              <span className="text-gold-dark dark:text-gold-DEFAULT">Time</span>
-              <span className="block text-xl font-normal text-muted-foreground mt-2">
-                Painel Administrativo
-              </span>
+              <span className="text-gold-DEFAULT">Time</span>
             </CardTitle>
-            <CardDescription>
-              Faça login para acessar o painel administrativo
+            <CardDescription className="text-lg font-medium text-muted-foreground">
+              Painel Administrativo
             </CardDescription>
+            <p className="text-sm text-muted-foreground font-normal">
+              Faça login para acessar o painel administrativo
+            </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="text-foreground">Email</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="admin@example.com" 
                           type="email"
+                          className="border-gold-light/50 focus-visible:ring-gold-DEFAULT" 
                           {...field} 
                         />
                       </FormControl>
@@ -99,13 +115,25 @@ const AdminLogin = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Senha</FormLabel>
+                      <FormLabel className="text-foreground">Senha</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="password" 
-                          placeholder="••••••••" 
-                          {...field} 
-                        />
+                        <div className="relative">
+                          <Input 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="••••••••" 
+                            className="border-gold-light/50 focus-visible:ring-gold-DEFAULT pr-10" 
+                            {...field} 
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                            onClick={toggleShowPassword}
+                          >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -114,17 +142,21 @@ const AdminLogin = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full bg-gold-DEFAULT hover:bg-gold-dark text-white"
-                  disabled={form.formState.isSubmitting}
+                  className="w-full bg-gold-dark hover:bg-gold-DEFAULT text-white font-medium py-2.5"
+                  disabled={isLoading}
                 >
-                  {form.formState.isSubmitting ? "Entrando..." : "Entrar"}
+                  {isLoading ? "Entrando..." : "Entrar"}
                 </Button>
 
-                <p className="text-center text-sm text-muted-foreground mt-4">
-                  Acesso de demonstração:<br />
-                  Email: admin@example.com<br />
-                  Senha: admin123
-                </p>
+                <div className="rounded-md bg-muted/40 p-4 mt-6">
+                  <p className="text-center text-sm text-muted-foreground font-medium">
+                    Acesso de demonstração:
+                  </p>
+                  <div className="mt-2 text-center text-sm">
+                    <p className="text-muted-foreground">Email: admin@example.com</p>
+                    <p className="text-muted-foreground">Senha: admin123</p>
+                  </div>
+                </div>
               </form>
             </Form>
           </CardContent>
